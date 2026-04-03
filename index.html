@@ -1,0 +1,906 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Ultra-Modern Prestige Mansion</title>
+  <meta name="description" content="Luxury 3D Mansion VR Experience – multi-millionaire's estate.">
+
+  <script src="script/aframe.min.js"></script>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      background: #000;
+      overflow: hidden;
+      font-family: 'Segoe UI', sans-serif;
+    }
+
+    #ui {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 999;
+      background: rgba(0, 0, 0, 0.88);
+      padding: 14px 22px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: center;
+      border-radius: 14px;
+      border: 1px solid #00f0ff;
+      box-shadow: 0 0 30px rgba(0, 240, 255, 0.25);
+    }
+
+    .btn {
+      background: transparent;
+      border: 1px solid #00f0ff;
+      color: #00f0ff;
+      padding: 7px 14px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+      font-weight: bold;
+      cursor: pointer;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      transition: all 0.25s;
+    }
+
+    .btn:hover {
+      background: #00f0ff;
+      color: #000;
+      box-shadow: 0 0 12px #00f0ff;
+    }
+
+    .btn.night-btn {
+      border-color: #ffdf88;
+      color: #ffdf88;
+    }
+
+    .btn.night-btn:hover {
+      background: #ffdf88;
+      color: #000;
+      box-shadow: 0 0 12px #ffdf88;
+    }
+
+    #hud {
+      position: fixed;
+      top: 20px;
+      left: 20px;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    #hud h1 {
+      color: #fff;
+      font-size: 1.6rem;
+      letter-spacing: 3px;
+      text-shadow: 0 0 20px #00f0ff;
+    }
+
+    #hud span {
+      color: #aaa;
+      font-size: 0.85rem;
+      letter-spacing: 1px;
+    }
+
+    #cross {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 14px;
+      height: 14px;
+      z-index: 999;
+      pointer-events: none;
+    }
+
+    #cross::before,
+    #cross::after {
+      content: '';
+      position: absolute;
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    #cross::before {
+      width: 2px;
+      height: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+
+    #cross::after {
+      height: 2px;
+      width: 100%;
+      top: 50%;
+      transform: translateY(-50%);
+    }
+
+    #room-label {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      z-index: 999;
+      color: #00f0ff;
+      font-size: 0.9rem;
+      letter-spacing: 2px;
+      text-align: right;
+      text-shadow: 0 0 10px #00f0ff;
+      pointer-events: none;
+    }
+
+    #loading {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: #000;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: opacity 1s;
+    }
+
+    #loading h2 {
+      color: #00f0ff;
+      font-size: 2rem;
+      letter-spacing: 4px;
+      margin-bottom: 20px;
+    }
+
+    #loading p {
+      color: #aaa;
+      letter-spacing: 2px;
+    }
+
+    .bar {
+      width: 300px;
+      height: 3px;
+      background: #111;
+      border-radius: 3px;
+      margin-top: 20px;
+    }
+
+    .bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #00f0ff, #0080ff);
+      border-radius: 3px;
+      animation: load 3s ease-in-out forwards;
+    }
+
+    @keyframes load {
+      from {
+        width: 0
+      }
+
+      to {
+        width: 100%
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <div id="loading">
+    <h2>⬡ PRESTIGE MANSION ⬡</h2>
+    <p>LOADING LUXURY ESTATE...</p>
+    <div class="bar">
+      <div class="bar-fill"></div>
+    </div>
+  </div>
+  <div id="hud">
+    <h1>⬡ PRESTIGE MANSION ⬡</h1>
+    <span>WASD = Walk &nbsp;|&nbsp; Mouse = Look &nbsp;|&nbsp; Click buttons to teleport &nbsp;|&nbsp; <kbd style="background:#00f0ff22;border:1px solid #00f0ff;border-radius:3px;padding:1px 5px;font-size:0.8rem">Space</kbd> Aerial View &nbsp;|&nbsp; <kbd style="background:#00f0ff22;border:1px solid #00f0ff;border-radius:3px;padding:1px 5px;font-size:0.8rem">Ctrl</kbd> Restore</span>
+  </div>
+  <div id="cross"></div>
+  <div id="room-label">POOL VIEW</div>
+  <div id="ui">
+    <button class="btn" onclick="go(0,1.6,30,'POOL VIEW')">Pool View</button>
+    <button class="btn" onclick="go(0,1.6,8,'MANSION FRONT')">Mansion</button>
+    <button class="btn" onclick="go(25,1.6,22,'SUMMER HUT')">Summer Hut</button>
+    <button class="btn" onclick="go(-25,1.6,22,'PERGOLA')">Pergola</button>
+    <button class="btn" onclick="go(17,1.6,18,'OUTDOOR KITCHEN')">BBQ &amp; Grill</button>
+    <button class="btn" onclick="go(0,1.6,60,'FOUNTAIN')">Fountain</button>
+    <button class="btn" onclick="go(3,1.6,50,'DRIVEWAY')">Driveway</button>
+    <button class="btn" onclick="go(-60,1.6,5,'TENNIS COURT')">Tennis Court</button>
+    <button class="btn" onclick="go(65,1.6,-35,'HELIPAD')">Helipad</button>
+    <button class="btn" onclick="go(-45,1.6,0,'GARDENS')">Gardens</button>
+    <button class="btn night-btn" onclick="toggleNight()">Day / Night</button>
+  </div>
+
+  <a-scene id="main-scene" background="color:#87CEEB"
+    fog="type:exponential;color:#87CEEB;density:0.002" shadow="type:pcfsoft"
+    renderer="antialias:false;colorManagement:true;pixelRatio:1" loading-screen="enabled:false">
+
+    <!-- ===== ASSETS ===== -->
+    <!-- Assets: timeout=0 means the scene fires 'loaded' immediately; models stream in progressively -->
+    <a-assets timeout="0">
+      <!-- Critical / visible-on-load assets first -->
+      <a-asset-item id="mansion-model" src="assets/modern_luxury_villa_house_building_home/scene.gltf"></a-asset-item>
+      <a-asset-item id="m4-widebody" src="assets/bmw_m4_widebody/scene.gltf"></a-asset-item>
+      <a-asset-item id="porsche 911" src="assets/porsche_911_turbo_s/scene.gltf"></a-asset-item>
+      <!-- Interior / secondary assets -->
+      <a-asset-item id="kitchen-model" src="assets/kitchen_design_set/scene.gltf"></a-asset-item>
+      <a-asset-item id="desk-model" src="assets/ikea_desk/scene.gltf"></a-asset-item>
+      <a-asset-item id="television-model" src="assets/generic_television_set/scene.gltf"></a-asset-item>
+      <a-asset-item id="bed-couch" src="assets/couch_with_bed/scene.gltf"></a-asset-item>
+      <a-asset-item id="complete-couch" src="assets/couch_complete_set/scene.gltf"></a-asset-item>
+      <a-asset-item id="byas" src="assets/byas/scene.gltf"></a-asset-item>
+      <a-asset-item id="bookcase" src="assets/bookcase/scene.gltf"></a-asset-item>
+      <a-asset-item id="bed-6" src="assets/bed_06/scene.gltf"></a-asset-item>
+      <a-asset-item id="bed-1" src="assets/bed_01/scene.gltf"></a-asset-item>
+      <a-asset-item id="air conditioner" src="assets/air_conditioner/scene.gltf"></a-asset-item>
+      <a-asset-item id="wardrobe-model" src="assets/wardrobe/scene.gltf"></a-asset-item>
+      <a-asset-item id="bathroom" src="assets/modern_bathroom/scene.gltf"></a-asset-item>
+      <a-asset-item id="wall_lights" src="assets/5_modern_wall_lights/scene.gltf"></a-asset-item>
+      <a-asset-item id="living_kitchen" src="assets/Living_kitchen/scene.gltf"></a-asset-item>
+
+      <!-- Mixins -->
+      <a-mixin id="wall-mat" material="color:#F2F2F2;roughness:0.9;metalness:0.0"></a-mixin>
+      <a-mixin id="concrete-mat" material="color:#C8C8C8;roughness:0.95;metalness:0.0"></a-mixin>
+      <a-mixin id="dark-metal" material="color:#111111;roughness:0.4;metalness:0.8"></a-mixin>
+      <a-mixin id="glass-mat"
+        material="color:#88AACC;opacity:0.32;transparent:true;roughness:0.0;metalness:0.9"></a-mixin>
+      <a-mixin id="floor-mat" material="color:#DCDCDC;roughness:0.35;metalness:0.1"></a-mixin>
+      <a-mixin id="wood-mat" material="color:#8A5A44;roughness:0.75;metalness:0.05"></a-mixin>
+      <a-mixin id="blue-led" material="color:#00F0FF;emissive:#00F0FF;emissiveIntensity:3.0"></a-mixin>
+      <a-mixin id="warm-led" material="color:#FFDF88;emissive:#FFDF88;emissiveIntensity:1.8"></a-mixin>
+      <a-mixin id="gold-mat" material="color:#C8A050;roughness:0.3;metalness:0.85"></a-mixin>
+      <a-mixin id="marble-mat" material="color:#E8E0D8;roughness:0.25;metalness:0.15"></a-mixin>
+      <a-mixin id="steel-mat" material="color:#889AAA;roughness:0.2;metalness:0.9"></a-mixin>
+      <a-mixin id="cream-mat" material="color:#F5F0E8;roughness:0.9;metalness:0.0"></a-mixin>
+    </a-assets>
+
+    <!-- ===== CAMERA RIG ===== -->
+    <a-entity id="rig" position="0 1.6 30">
+      <a-camera id="cam" near="0.05" far="2000" wasd-controls="acceleration:25"
+        look-controls="pointerLockEnabled:false">
+      </a-camera>
+    </a-entity>
+
+    <!-- ===== SKY & ATMOSPHERE ===== -->
+    <a-sky id="sky" position="0 -150.72849 -64.22393" color="#87CEEB"></a-sky>
+    <a-entity id="sun-system" position="-100 45 -80">
+      <a-sphere id="sun-mesh" radius="8" material="color:#FFF4D6;emissive:#FFF4D6;emissiveIntensity:2.5"></a-sphere>
+      <a-light id="sun-light" type="directional" color="#FFF8E0" intensity="2.5" cast-shadow="true"
+        shadow-camera-left="-60" shadow-camera-right="60" shadow-camera-bottom="-60" shadow-camera-top="60"
+        shadow-map-width="1024" shadow-map-height="1024"></a-light>
+    </a-entity>
+    <a-light id="ambient-light" type="ambient" color="#BDD8F0" intensity="1.2"></a-light>
+
+
+    <!-- ===== TERRAIN ===== -->
+    <a-plane position="0 -0.05 0" rotation="-90 0 0" width="600" height="600" material="color:#0E2A0E;roughness:0.95"
+      receive-shadow="true"></a-plane>
+
+    <!-- ===== PATIO SLAB ===== -->
+    <a-box position="0 -0.03 0" width="50" height="0.06" depth="60" mixin="floor-mat" receive-shadow="true"></a-box>
+
+    <!-- ===== COMPOUND WALLS (perimeter) ===== -->
+    <a-box position="0 2.0 75" width="220" height="4" depth="0.5" mixin="concrete-mat"></a-box>
+    <a-box position="0 2.0 -80" width="220" height="4" depth="0.5" mixin="concrete-mat"></a-box>
+    <a-box position="-110 2.0 -2" width="0.5" height="4" depth="160" mixin="concrete-mat"></a-box>
+    <a-box position="110 2.0 -2" width="0.5" height="4" depth="160" mixin="concrete-mat"></a-box>
+    <!-- Wall top LED trim -->
+    <a-box position="0 4.06 75" width="220" height="0.06" depth="0.06" mixin="warm-led"></a-box>
+    <a-box position="-110 4.06 -2" width="0.06" height="0.06" depth="160" mixin="warm-led"></a-box>
+    <a-box position="110 4.06 -2" width="0.06" height="0.06" depth="160" mixin="warm-led"></a-box>
+
+    <!-- ===== GATE ===== -->
+    <!-- Pillars -->
+    <a-box position="-9 3 75" width="1.2" height="6" depth="1.2" mixin="dark-metal"></a-box>
+    <a-box position="9 3 75" width="1.2" height="6" depth="1.2" mixin="dark-metal"></a-box>
+    <!-- Pillar caps -->
+    <a-box position="-9 6.2 75" width="1.6" height="0.4" depth="1.6" mixin="gold-mat"></a-box>
+    <a-box position="9 6.2 75" width="1.6" height="0.4" depth="1.6" mixin="gold-mat"></a-box>
+    <!-- Gate panels -->
+    <a-box position="-4.5 2.5 75" width="7.4" height="4.5" depth="0.1" mixin="dark-metal"></a-box>
+    <a-box position="4.5 2.5 75" width="7.4" height="4.5" depth="0.1" mixin="dark-metal"></a-box>
+    <!-- Gate LED strips -->
+    <a-box position="-9 6.0 75" width="0.15" height="0.08" depth="0.08" mixin="blue-led"></a-box>
+    <a-box position="9 6.0 75" width="0.15" height="0.08" depth="0.08" mixin="blue-led"></a-box>
+
+    <!-- ===== DRIVEWAY ===== -->
+    <a-box position="0 -0.02 55" width="16" height="0.04" depth="40" mixin="floor-mat"></a-box>
+    <!-- Driveway edge LED -->
+    <a-box position="-8 0.06 55" width="0.08" height="0.06" depth="40" mixin="blue-led"></a-box>
+    <a-box position="8 0.06 55" width="0.08" height="0.06" depth="40" mixin="blue-led"></a-box>
+
+    <!-- ===== MANSION GLTF MODEL ===== -->
+    <!-- X offset -8.59m centers the model (GLTF X center = 859cm at 0.01 scale) -->
+    <!-- Y=0 lets foundation go underground; building rises ~10m above ground -->
+    <!-- Z=-3.7 places building just behind patio (model Z spans 0-3.45m at 0.01 scale) -->
+    <a-entity id="mansion" gltf-model="#mansion-model" position="-0.18 2.098 -21.94" scale="1.5 1.5 1.5"
+      rotation="0 0 0" shadow="cast:true; receive:true">
+    </a-entity>
+    <a-entity id="widebody-m4" gltf-model="#m4-widebody" rotation="0 -90 0" scale="0.43 0.41 0.42"
+      position="18.33836 0.37412 6.35055" shadow="cast:true; receive:true"></a-entity>
+    <a-entity id="porsche 911 Turbo" gltf-model="#porsche 911" rotation="0 180 0" position="17.52964 0.74872 -8.03261"
+      scale="1 1 1" shadow="cast:true; receive:true"></a-entity>
+
+    <!-- ===== IMPORTED FURNITURE & ADDITIONAL ASSETS ===== -->
+    <!-- The following 12 assets have been imported. Their positions and scales are set 
+         to default/arbitrary values so you can easily find them and use the A-Frame 
+         Inspector to correctly scale and position them into the mansion's rooms. -->
+    <a-entity id="imported-furniture" position="0.55262 29.38382 15.31966">
+      <a-entity id="inst-kitchen" rotation="0 90 0" scale="0.05 0.05 0.03" gltf-model="#kitchen-model"
+        position="-9.00797 -27.93274 -13.70831" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-desk" rotation="0 90 0" scale="0.03 0.04 0.04" gltf-model="#desk-model"
+        position="7.31885 -23.04954 -42.67861" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-tv" rotation="0 90 0" scale="0.03 0.02 0.01" gltf-model="#television-model"
+        position="6.79166 -25.26501 -39.41256" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-bed-couch" scale="0.72 0.47 0.55" gltf-model="#bed-couch"
+        position="7.82112 -23.08796 -34.15376" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-complete-couch" rotation="0 90 0" scale="-0.05 0.04 0.07" gltf-model="#complete-couch"
+        position="15.60774 -29.01901 -40.41629" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-byas" scale="1.25 1.23 1.48" rotation="0 90 0" gltf-model="#byas"
+        position="7.44024 -29.01909 -39.53912" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-bookcase" scale="1.4 1.68 1.35" rotation="0 -90 0" gltf-model="#bookcase"
+        position="14.56684 -23.02567 -49.4376" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-bed-6" rotation="0 180 0" scale="7.48 7.11 9.56" gltf-model="#bed-6"
+        position="-7.73854 -28.76659 -51.2504" shadow="cast:true; receive:true"></a-entity>
+      <a-entity id="inst-bed-1" rotation="0 270 0" scale="0.53 0.45 0.53" gltf-model="#bed-1"
+        position="11.56384 -23.03012 -49.99623" shadow="cast:true; receive:true"></a-entity>
+
+      <a-entity id="inst-ac" scale="0.18 0.22 0.18" gltf-model="#air conditioner"
+        position="11.30722 -26.26528 -47.31482" shadow="cast:true; receive:true"></a-entity>
+    </a-entity>
+    <a-entity id="inst-wardrobe" rotation="0 90 0" scale="1.89 1.73 1.58" gltf-model="#wardrobe-model"
+      position="7.6448 6.26598 -24.392"></a-entity>
+
+    <a-entity id="bathroom_live" scale="2.53 1.87 1.44" position="11.28109 6.15538 -12.53074" gltf-model="#bathroom"></a-entity>
+    <a-entity id="wall_lights_live" position="2.19627 2.71133 -35.4257" gltf-model="#wall_lights"></a-entity>
+    <a-entity id="living_kitchen_live" scale="0.001 0.001 0.001" position="1.2564 0.35639 -30.284" gltf-model="#living_kitchen"></a-entity>
+
+    <!-- ===== FACADE LIGHT (single spot, replaces 3) ===== -->
+    <a-light type="spot" position="0 0.5 11" rotation="-55 0 0" color="#FFF0D0" intensity="2.0" angle="40" distance="35"></a-light>
+
+    <!-- ===== INFINITY POOL ===== -->
+    <a-box position="0 -0.03 22" width="18" height="0.06" depth="32" mixin="floor-mat" receive-shadow="true"></a-box>
+    <!-- Pool basin -->
+    <a-box position="0 -1.0 22" width="10" height="2.0" depth="22" material="color:#0B3550;roughness:0.3"></a-box>
+    <!-- Pool water surface -->
+    <!-- Water surface (plain animated plane – no aframe-extras needed) -->
+    <a-plane position="0 0.04 22" rotation="-90 0 0" width="10" height="22"
+      material="color:#0090FF;opacity:0.88;transparent:true;roughness:0.05;metalness:0.4"
+      animation__color="property:material.color;from:#0070DD;to:#00AAFF;dir:alternate;dur:2500;loop:true;easing:easeInOutSine"
+      animation__opacity="property:material.opacity;from:0.80;to:0.92;dir:alternate;dur:1800;loop:true;easing:easeInOutSine">
+    </a-plane>
+    <!-- Pool edge LED -->
+    <a-box position="-5.05 0.1 22" width="0.08" height="0.06" depth="22" mixin="blue-led"></a-box>
+    <a-box position="5.05 0.1 22" width="0.08" height="0.06" depth="22" mixin="blue-led"></a-box>
+    <a-box position="0 0.1 33.05" width="10" height="0.06" depth="0.08" mixin="blue-led"></a-box>
+    <!-- Pool ambient glow (single light replaces 4) -->
+    <a-light type="point" color="#0080FF" intensity="1.5" position="0 0 22" distance="18"></a-light>
+
+    <!-- Waterfall feature wall (back of pool) -->
+    <a-box position="0 1.5 10.8" width="10" height="3" depth="0.4" mixin="concrete-mat"></a-box>
+    <a-box position="0 0.5 10.8" width="8" height="0.08" depth="0.2" mixin="blue-led"></a-box>
+    <!-- Waterfall cascade (static - animation removed for performance) -->
+    <a-box position="0 1.0 10.6" width="8" height="2.0" depth="0.1"
+      material="color:#88CCFF;opacity:0.55;transparent:true">
+    </a-box>
+
+    <!-- ===== POOL LOUNGERS (Right side, JS-generated) ===== -->
+    <a-entity id="lounger-container"></a-entity>
+
+    <!-- ===== SUMMER HUT (Ground level, right side of pool) ===== -->
+    <!-- Base deck -->
+    <a-box position="25 -0.02 22" width="14" height="0.06" depth="14" material="color:#8A6A44;roughness:0.8"></a-box>
+    <!-- 4 steel columns -->
+    <a-cylinder position="19 2.5 16" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="31 2.5 16" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="19 2.5 28" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="31 2.5 28" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <!-- Slatted thatched roof -->
+    <a-box position="25 5.15 22" width="14.5" height="0.4" depth="14.5" mixin="wood-mat"></a-box>
+    <a-box position="19 5.38 22" width="0.15" height="0.05" depth="14.5" mixin="dark-metal"></a-box>
+    <a-box position="25 5.38 22" width="0.15" height="0.05" depth="14.5" mixin="dark-metal"></a-box>
+    <a-box position="31 5.38 22" width="0.15" height="0.05" depth="14.5" mixin="dark-metal"></a-box>
+    <!-- Wicker L-sofa -->
+    <a-box position="22 0.4 26" width="6" height="0.55" depth="1.5" mixin="cream-mat"></a-box>
+    <a-box position="22 0.8 27.2" width="6" height="0.65" depth="0.2" mixin="cream-mat"></a-box>
+    <a-box position="28 0.4 23" width="1.5" height="0.55" depth="5" mixin="cream-mat"></a-box>
+    <a-box position="29.2 0.8 23" width="0.2" height="0.65" depth="5" mixin="cream-mat"></a-box>
+    <!-- Low table -->
+    <a-cylinder position="24 0.4 23" radius="1.0" height="0.08" mixin="wood-mat"></a-cylinder>
+    <a-cylinder position="24 0.2 23" radius="0.08" height="0.4" mixin="dark-metal"></a-cylinder>
+    <!-- Hanging lanterns (static emissive - animations removed for performance) -->
+    <a-sphere position="21 4.4 19" radius="0.2" mixin="warm-led"></a-sphere>
+    <a-sphere position="29 4.4 19" radius="0.2" mixin="warm-led"></a-sphere>
+    <a-sphere position="21 4.4 25" radius="0.2" mixin="warm-led"></a-sphere>
+    <a-sphere position="29 4.4 25" radius="0.2" mixin="warm-led"></a-sphere>
+    <!-- Warm lit point inside hut -->
+    <a-light type="point" color="#FFD080" intensity="1.2" position="25 4 22" distance="14"></a-light>
+    <!-- Tropical planting around hut -->
+    <a-cylinder position="17 0.6 16" radius="0.4" height="0.7" material="color:#6A3A1A;roughness:0.95"></a-cylinder>
+    <a-sphere position="17 1.5 16" radius="0.75" material="color:#0E4A1A;roughness:0.9"></a-sphere>
+    <a-cylinder position="33 0.6 16" radius="0.4" height="0.7" material="color:#6A3A1A;roughness:0.95"></a-cylinder>
+    <a-sphere position="33 1.5 16" radius="0.75" material="color:#0E4A1A;roughness:0.9"></a-sphere>
+    <a-cylinder position="17 0.6 28" radius="0.4" height="0.7" material="color:#6A3A1A;roughness:0.95"></a-cylinder>
+    <a-sphere position="17 1.5 28" radius="0.75" material="color:#0E4A1A;roughness:0.9"></a-sphere>
+    <a-cylinder position="33 0.6 28" radius="0.4" height="0.7" material="color:#6A3A1A;roughness:0.95"></a-cylinder>
+    <a-sphere position="33 1.5 28" radius="0.75" material="color:#1A5A1A;roughness:0.9"></a-sphere>
+
+    <!-- ===== PERGOLA RELAXATION AREA (Left side) ===== -->
+    <a-box position="-25 -0.02 22" width="14" height="0.06" depth="14" material="color:#DCDCDC;roughness:0.5"></a-box>
+    <!-- 4 columns -->
+    <a-cylinder position="-19 2.5 16" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="-31 2.5 16" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="-19 2.5 28" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="-31 2.5 28" radius="0.12" height="5" mixin="dark-metal"></a-cylinder>
+    <!-- Pergola slatted roof -->
+    <a-box position="-25 5.15 16" width="14" height="0.12" depth="0.15" mixin="dark-metal"></a-box>
+    <a-box position="-25 5.15 22" width="14" height="0.12" depth="0.15" mixin="dark-metal"></a-box>
+    <a-box position="-25 5.15 28" width="14" height="0.12" depth="0.15" mixin="dark-metal"></a-box>
+    <!-- Cross beams -->
+    <a-box position="-19 5.1 22" width="0.12" height="0.2" depth="14" mixin="dark-metal"></a-box>
+    <a-box position="-31 5.1 22" width="0.12" height="0.2" depth="14" mixin="dark-metal"></a-box>
+    <!-- L-sofa set (teal for visibility) -->
+    <a-box position="-28 0.4 26" width="6" height="0.55" depth="1.5" material="color:#1A9E9E;roughness:0.7;metalness:0.05"></a-box>
+    <a-box position="-28 0.8 27.2" width="6" height="0.65" depth="0.2" material="color:#127A7A;roughness:0.7;metalness:0.05"></a-box>
+    <a-box position="-22 0.4 23" width="1.5" height="0.55" depth="5" material="color:#1A9E9E;roughness:0.7;metalness:0.05"></a-box>
+    <a-box position="-20.8 0.8 23" width="0.2" height="0.65" depth="5" material="color:#127A7A;roughness:0.7;metalness:0.05"></a-box>
+    <!-- Day bed -->
+    <a-box position="-28 0.4 18" width="3" height="0.25" depth="2.2" mixin="cream-mat"></a-box>
+    <a-box position="-28 0.65 18" width="2.8" height="0.12" depth="2.0" material="color:#FFFFF0;roughness:0.9"></a-box>
+    <!-- Central table -->
+    <a-cylinder position="-26 0.45 23.5" radius="0.9" height="0.08" mixin="marble-mat"></a-cylinder>
+    <a-cylinder position="-26 0.22 23.5" radius="0.06" height="0.44" mixin="dark-metal"></a-cylinder>
+    <!-- String lights (static emissive - animations removed for performance) -->
+    <a-sphere position="-20 4.6 16" radius="0.12" mixin="warm-led"></a-sphere>
+    <a-sphere position="-23 4.4 16" radius="0.12" mixin="warm-led"></a-sphere>
+    <a-sphere position="-26 4.6 16" radius="0.12" mixin="warm-led"></a-sphere>
+    <a-sphere position="-29 4.4 16" radius="0.12" mixin="warm-led"></a-sphere>
+    <a-sphere position="-20 4.6 28" radius="0.12" mixin="warm-led"></a-sphere>
+    <a-sphere position="-26 4.6 28" radius="0.12" mixin="warm-led"></a-sphere>
+
+    <!-- ===== OUTDOOR KITCHEN / BBQ PAVILION ===== -->
+    <!-- Back wall -->
+    <a-box position="17 1.55 18" width="10" height="3.1" depth="0.3" mixin="wall-mat" cast-shadow="true"></a-box>
+    <!-- Roof -->
+    <a-box position="17 3.35 16" width="10" height="0.3" depth="5" mixin="wood-mat" cast-shadow="true"></a-box>
+    <a-box position="17 3.2 14" width="9" height="0.06" depth="0.06" mixin="warm-led"></a-box>
+    <!-- Backsplash -->
+    <a-box position="17 1.5 17.85" width="9" height="2.5" depth="0.1" material="color:#9F9F9F;roughness:0.55"></a-box>
+    <!-- Countertop -->
+    <a-box position="17 0.94 16.9" width="9" height="0.08" depth="1.3" mixin="marble-mat"></a-box>
+    <a-box position="17 0.47 16.9" width="9" height="0.9" depth="1.2" material="color:#C0C0C0;roughness:0.8"></a-box>
+    <!-- BBQ Grill (premium) -->
+    <a-box position="20 1.08 16.9" width="2.0" height="0.4" depth="1.2" mixin="steel-mat"></a-box>
+    <!-- Grill grates animated flicker -->
+    <a-box position="20 1.3 16.9" width="1.8" height="0.08" depth="1.0"
+      material="color:#FF5500;emissive:#FF3300;emissiveIntensity:1.5;transparent:true;opacity:0.75"
+      animation="property:material.emissiveIntensity;from:1.2;to:2.5;dir:alternate;dur:400;loop:true;easing:easeInOutSine">
+    </a-box>
+    <!-- Range hood -->
+    <a-box position="20 2.6 16.9" width="2.2" height="0.7" depth="1.2" mixin="steel-mat"></a-box>
+    <a-box position="20 3.05 16.9" width="0.8" height="0.6" depth="0.6" mixin="steel-mat"></a-box>
+    <!-- Sink -->
+    <a-box position="13.5 0.98 16.7" width="0.9" height="0.06" depth="0.55"
+      material="color:#1A1A1A;roughness:0.2"></a-box>
+    <a-cylinder position="13.5 1.22 16.5" radius="0.03" height="0.45" mixin="steel-mat"></a-cylinder>
+    <!-- BBQ fire light (static, animation removed) -->
+    <a-light type="point" color="#FF6600" intensity="1.5" position="20 1.5 16.9" distance="10"></a-light>
+    <!-- Outdoor dining table -->
+    <a-box position="17 0.78 13" width="3.5" height="0.08" depth="1.8" mixin="wood-mat"></a-box>
+    <a-cylinder position="15.5 0.38 13" radius="0.06" height="0.76" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="18.5 0.38 13" radius="0.06" height="0.76" mixin="dark-metal"></a-cylinder>
+    <!-- 4 chairs around table -->
+    <a-box position="15 0.5 12" width="0.8" height="0.08" depth="0.8" mixin="wood-mat"></a-box>
+    <a-box position="19 0.5 12" width="0.8" height="0.08" depth="0.8" mixin="wood-mat"></a-box>
+    <a-box position="15 0.5 14" width="0.8" height="0.08" depth="0.8" mixin="wood-mat"></a-box>
+    <a-box position="19 0.5 14" width="0.8" height="0.08" depth="0.8" mixin="wood-mat"></a-box>
+
+
+    <!-- ===== FIRE PIT (Left of pool) ===== -->
+    <a-box position="-12 -0.03 24" width="10" height="0.05" depth="10" material="color:#1A4A1A;roughness:0.95"></a-box>
+    <a-box position="-12 0.15 24" width="5.5" height="0.22" depth="5.5" mixin="concrete-mat"></a-box>
+    <a-box position="-12 0.28 24" width="1.6" height="0.22" depth="1.6" material="color:#1A1A1A;roughness:0.95"></a-box>
+    <a-sphere position="-12 0.6 24" radius="0.5"
+      material="color:#FF8800;emissive:#FF8800;emissiveIntensity:2;transparent:true;opacity:0.85"
+      animation="property:scale;from:1 1 1;to:1.15 1.35 1.15;dir:alternate;dur:600;loop:true;easing:easeInOutSine">
+    </a-sphere>
+    <a-light type="point" position="-12 1.0 24" color="#FF6600" intensity="2.0" distance="14"></a-light>
+    <!-- Fire pit seating -->
+    <a-box position="-12 0.36 21" width="5" height="0.15" depth="0.65" mixin="wood-mat"></a-box>
+    <a-box position="-12 0.36 27" width="5" height="0.15" depth="0.65" mixin="wood-mat"></a-box>
+
+    <!-- ===== FOUNTAIN (Entrance) ===== -->
+    <!-- Basin -->
+    <a-cylinder position="0 0.08 62" radius="4.5" height="0.6" mixin="concrete-mat"></a-cylinder>
+    <a-cylinder position="0 0.35 62" radius="4.2" height="0.08"
+      material="color:#55AACC;opacity:0.9;transparent:true;roughness:0.1"></a-cylinder>
+    <!-- Center pedestal -->
+    <a-cylinder position="0 0.8 62" radius="0.5" height="1.2" mixin="marble-mat"></a-cylinder>
+    <a-cylinder position="0 1.35 62" radius="1.2" height="0.15" mixin="marble-mat"></a-cylinder>
+    <!-- Fountain jets (animated) -->
+    <a-entity id="fountain-container"></a-entity>
+    <!-- Perimeter fountain lights -->
+    <a-light type="point" color="#00CCFF" intensity="1.0" position="0 0.5 62" distance="10"></a-light>
+
+    <!-- ===== TOPIARY BALLS along driveway ===== -->
+    <a-entity id="topiary-container"></a-entity>
+
+    <!-- ===== TENNIS COURT (Far left) ===== -->
+    <a-box position="-62 -0.02 5" width="24" height="0.04" depth="11" material="color:#2255AA;roughness:0.7"></a-box>
+    <!-- Court lines -->
+    <a-box position="-62 0.01 5" width="24" height="0.02" depth="0.1" material="color:#ffffff;roughness:0.9"></a-box>
+    <a-box position="-62 0.01 5" width="0.1" height="0.02" depth="11" material="color:#ffffff;roughness:0.9"></a-box>
+    <a-box position="-50 0.01 5" width="0.1" height="0.02" depth="11" material="color:#ffffff;roughness:0.9"></a-box>
+    <a-box position="-74 0.01 5" width="0.1" height="0.02" depth="11" material="color:#ffffff;roughness:0.9"></a-box>
+    <!-- Net posts -->
+    <a-cylinder position="-62 0.7 10" radius="0.05" height="1.4" mixin="dark-metal"></a-cylinder>
+    <a-cylinder position="-62 0.7 0" radius="0.05" height="1.4" mixin="dark-metal"></a-cylinder>
+    <!-- Net -->
+    <a-box position="-62 0.7 5" width="0.04" height="1.0" depth="10"
+      material="color:#cccccc;opacity:0.6;transparent:true;roughness:0.9"></a-box>
+
+
+    <!-- ===== HELIPAD (Far right rear) ===== -->
+    <a-cylinder position="65 -0.02 -38" radius="8" height="0.04" material="color:#444444;roughness:0.95"></a-cylinder>
+    <!-- H marking -->
+    <a-box position="65 0.02 -38" width="0.6" height="0.02" depth="5" material="color:#FFFF00;roughness:0.9"></a-box>
+    <a-box position="63 0.02 -38" width="0.6" height="0.02" depth="5" material="color:#FFFF00;roughness:0.9"></a-box>
+    <a-box position="67 0.02 -38" width="0.6" height="0.02" depth="5" material="color:#FFFF00;roughness:0.9"></a-box>
+    <a-box position="65 0.02 -38" width="6" height="0.02" depth="0.6" material="color:#FFFF00;roughness:0.9"></a-box>
+    <!-- Perimeter LED lights -->
+    <a-entity id="helipad-lights-container"></a-entity>
+
+    <!-- ===== LAMP POSTS (compound-wide) ===== -->
+    <a-entity id="lamp-container"></a-entity>
+
+    <!-- ===== HEDGE BORDERS ===== -->
+    <a-box id="hedge1" scale="1 1 0.82071" position="-35 0.8 5.15071" width="0.9" height="1.6" depth="50"
+      material="color:#0B3B0B;roughness:0.95"></a-box>
+    <a-box id="hedge2" scale="1 1 1.0719" position="35 0.8 5.97384" width="0.9" height="1.6" depth="50"
+      material="color:#0B3B0B;roughness:0.95"></a-box>
+    <a-box id="hedge3" scale="0.76708 0.72178 -0.71283" position="0 0.8 -60.00802" width="80" height="1.6" depth="0.9"
+      material="color:#0B3B0B;roughness:0.95"></a-box>
+
+    <!-- ===== ORNAMENTAL GARDEN BEDS ===== -->
+    <a-box position="-50 0.1 35" width="14" height="0.18" depth="10" material="color:#2A1000;roughness:1"></a-box>
+    <a-sphere position="-50 0.7 35" radius="0.9" material="color:#0E4A0E;roughness:0.9"></a-sphere>
+    <a-box position="50 0.1 35" width="14" height="0.18" depth="10" material="color:#2A1000;roughness:1"></a-box>
+    <a-sphere position="50 0.7 35" radius="0.9" material="color:#0E4A0E;roughness:0.9"></a-sphere>
+
+    <!-- Ambient exterior lighting handled by directional + ambient lights -->
+
+    <!-- Palm container (JS-generated) -->
+    <a-entity id="palm-container"></a-entity>
+
+  </a-scene>
+
+  <script>
+    // ===== LOADING SCREEN =====
+    const scene = document.querySelector('a-scene');
+    const loadingEl = document.getElementById('loading');
+    const barFill = loadingEl ? loadingEl.querySelector('.bar-fill') : null;
+
+    const hideLoader = () => {
+      if (!loadingEl || loadingEl._hidden) return;
+      loadingEl._hidden = true;
+      loadingEl.style.opacity = '0';
+      setTimeout(() => { if (loadingEl.parentNode) loadingEl.parentNode.removeChild(loadingEl); }, 1000);
+    };
+
+    // Show real progress for visual feedback while assets stream in
+    const assets = document.querySelector('a-assets');
+    if (assets && barFill) {
+      const items = assets.querySelectorAll('a-asset-item');
+      let loaded = 0;
+      const total = items.length || 1;
+      const onItemDone = () => {
+        loaded++;
+        const pct = Math.min(100, Math.round((loaded / total) * 100));
+        barFill.style.animation = 'none';
+        barFill.style.width = pct + '%';
+        barFill.style.transition = 'width 0.25s ease';
+      };
+      items.forEach(item => {
+        item.addEventListener('loaded', onItemDone);
+        item.addEventListener('error', onItemDone);
+      });
+    }
+
+    // Hide loader the moment the FIRST frame is rendered – no waiting for assets
+    const hideOnRender = () => hideLoader();
+    scene.addEventListener('renderstart', hideOnRender, { once: true });
+
+    // Hard fallback: never stay stuck longer than 12 seconds
+    setTimeout(hideLoader, 12000);
+
+    // ===== PALM TREE GENERATOR =====
+    const palms = document.getElementById('palm-container');
+    const palmPositions = [
+      { x: -30, z: 28 }, { x: -28, z: -8 }, { x: -42, z: 58 },
+      { x: 30, z: 28 }, { x: 26, z: -10 }, { x: 44, z: 58 },
+      { x: -20, z: 65 }, { x: 20, z: 65 },
+      { x: -45, z: -20 }, { x: 45, z: -20 }
+    ];
+    palmPositions.forEach(p => {
+      const h = 10 + Math.random() * 6;
+      const trunk = document.createElement('a-cylinder');
+      trunk.setAttribute('position', `${p.x} ${h / 2} ${p.z}`);
+      trunk.setAttribute('radius', '0.24');
+      trunk.setAttribute('height', String(h));
+      trunk.setAttribute('material', 'color:#3A2200;roughness:1');
+      palms.appendChild(trunk);
+      // Static leaves - no animation for performance
+      for (let i = 0; i < 4; i++) {
+        const leaf = document.createElement('a-box');
+        leaf.setAttribute('position', `${p.x} ${h} ${p.z}`);
+        leaf.setAttribute('width', '5.5');
+        leaf.setAttribute('height', '0.09');
+        leaf.setAttribute('depth', '0.9');
+        leaf.setAttribute('rotation', `20 ${i * 90} 0`);
+        leaf.setAttribute('material', 'color:#0B3A10;roughness:0.9');
+        palms.appendChild(leaf);
+      }
+    });
+
+    // ===== LAMP POSTS =====
+    const lampCont = document.getElementById('lamp-container');
+    const lampPositions = [
+      { x: -9, z: 40 }, { x: -9, z: 50 }, { x: -9, z: 60 }, { x: -9, z: 70 },
+      { x: 9, z: 40 }, { x: 9, z: 50 }, { x: 9, z: 60 }, { x: 9, z: 70 },
+    ];
+    lampPositions.forEach(p => {
+      const pole = document.createElement('a-cylinder');
+      pole.setAttribute('position', `${p.x} 2.0 ${p.z}`);
+      pole.setAttribute('radius', '0.06');
+      pole.setAttribute('height', '4.0');
+      pole.setAttribute('material', 'color:#222222;roughness:0.4;metalness:0.8');
+      lampCont.appendChild(pole);
+      const globe = document.createElement('a-sphere');
+      globe.setAttribute('position', `${p.x} 4.2 ${p.z}`);
+      globe.setAttribute('radius', '0.22');
+      globe.setAttribute('material', 'color:#FFDF88;emissive:#FFDF88;emissiveIntensity:2.5');
+      lampCont.appendChild(globe);
+    });
+
+    // ===== POOL LOUNGERS =====
+    // Pool is at z=22. Loungers at z=16 are on the near side (pool is toward +z),
+    // so headrest faces away from pool (toward -z), backrest at z-0.7.
+    // Loungers at z=26 are on the far side (pool is toward -z),
+    // so headrest faces away from pool (toward +z), backrest at z+0.7.
+    const loungerCont = document.getElementById('lounger-container');
+    const POOL_CENTER_Z = 22;
+    [16, 26].forEach(z => {
+      // backrest offset: push headrest/back AWAY from the pool
+      const backOffset = (z < POOL_CENTER_Z) ? -0.7 : 0.7;
+      [-8.5, 8.5].forEach(x => {
+        const base = document.createElement('a-box');
+        base.setAttribute('position', `${x} 0.1 ${z}`);
+        base.setAttribute('width', '0.75');
+        base.setAttribute('height', '0.12');
+        base.setAttribute('depth', '2.0');
+        base.setAttribute('material', 'color:#E8A050;roughness:0.85');
+        loungerCont.appendChild(base);
+        const back = document.createElement('a-box');
+        back.setAttribute('position', `${x} 0.35 ${z + backOffset}`);
+        back.setAttribute('width', '0.72');
+        back.setAttribute('height', '0.5');
+        back.setAttribute('depth', '0.08');
+        // tilt back toward headrest direction: negative tilt for -z side, positive for +z side
+        const tilt = (backOffset < 0) ? -30 : 30;
+        back.setAttribute('rotation', `${tilt} 0 0`);
+        back.setAttribute('material', 'color:#C87030;roughness:0.85');
+        loungerCont.appendChild(back);
+      });
+    });
+
+    // ===== POOL UMBRELLAS =====
+    // One umbrella per lounger, positioned at the headrest end for shade.
+    // Alternating coral (#E8524A) and ocean-blue (#2A7FBF) canopies.
+    const umbrellaColors = ['#E8524A', '#2A7FBF', '#E8524A', '#2A7FBF'];
+    let uIdx = 0;
+    [16, 26].forEach(z => {
+      const headOffset = (z < POOL_CENTER_Z) ? -0.7 : 0.7;
+      // Place pole slightly beyond headrest end
+      const poleZ = z + headOffset * 2.2;
+      [-8.5, 8.5].forEach(x => {
+        const color = umbrellaColors[uIdx++ % umbrellaColors.length];
+
+        // Steel pole
+        const pole = document.createElement('a-cylinder');
+        pole.setAttribute('position', `${x} 1.25 ${poleZ}`);
+        pole.setAttribute('radius', '0.035');
+        pole.setAttribute('height', '2.5');
+        pole.setAttribute('material', 'color:#AAAAAA;roughness:0.25;metalness:0.9');
+        loungerCont.appendChild(pole);
+
+        // Canopy (wide flat cone, open downward like a real beach umbrella)
+        const canopy = document.createElement('a-cone');
+        canopy.setAttribute('position', `${x} 2.65 ${poleZ}`);
+        canopy.setAttribute('radius-bottom', '1.35');
+        canopy.setAttribute('radius-top', '0.04');
+        canopy.setAttribute('height', '0.55');
+        canopy.setAttribute('material', `color:${color};roughness:0.85;side:double`);
+        loungerCont.appendChild(canopy);
+
+        // White valance ring below canopy edge for resort look
+        const valance = document.createElement('a-torus');
+        valance.setAttribute('position', `${x} 2.35 ${poleZ}`);
+        valance.setAttribute('radius', '1.2');
+        valance.setAttribute('radius-tubular', '0.04');
+        valance.setAttribute('material', 'color:#FFFFFF;roughness:0.9;side:double');
+        loungerCont.appendChild(valance);
+      });
+    });
+
+    // ===== FOUNTAIN JETS (static cylinders, no animation for performance) =====
+    const fount = document.getElementById('fountain-container');
+    for (let i = 0; i < 3; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const r = 2.5;
+      const jx = Math.cos(angle) * r;
+      const jz = 62 + Math.sin(angle) * r;
+      const jet = document.createElement('a-cylinder');
+      jet.setAttribute('position', `${jx} 1.0 ${jz}`);
+      jet.setAttribute('radius', '0.05');
+      jet.setAttribute('height', '2.0');
+      jet.setAttribute('material', 'color:#88CCFF;opacity:0.7;transparent:true');
+      fount.appendChild(jet);
+    }
+
+    // ===== TOPIARY BALLS along driveway =====
+    const topiary = document.getElementById('topiary-container');
+    const topiaryZ = [43, 53, 63, 70];
+    topiaryZ.forEach(z => {
+      [-10.5, 10.5].forEach(x => {
+        const stem = document.createElement('a-cylinder');
+        stem.setAttribute('position', `${x} 0.35 ${z}`);
+        stem.setAttribute('radius', '0.07'); stem.setAttribute('height', '0.7');
+        stem.setAttribute('material', 'color:#3A2200;roughness:1');
+        topiary.appendChild(stem);
+        const ball = document.createElement('a-sphere');
+        ball.setAttribute('position', `${x} 1.0 ${z}`);
+        ball.setAttribute('radius', '0.55');
+        ball.setAttribute('material', 'color:#0B5A0B;roughness:0.85');
+        topiary.appendChild(ball);
+      });
+    });
+
+    // ===== HELIPAD PERIMETER LIGHTS (static emissive, no animation) =====
+    const heliLights = document.getElementById('helipad-lights-container');
+    for (let i = 0; i < 6; i++) {
+      const angle = (i / 6) * Math.PI * 2;
+      const hx = 65 + Math.cos(angle) * 7.5;
+      const hz = -38 + Math.sin(angle) * 7.5;
+      const hl = document.createElement('a-sphere');
+      hl.setAttribute('position', `${hx} 0.1 ${hz}`);
+      hl.setAttribute('radius', '0.15');
+      hl.setAttribute('material', `color:#FF3300;emissive:#FF3300;emissiveIntensity:2.5`);
+      heliLights.appendChild(hl);
+    }
+
+    // ===== TELEPORT =====
+    function go(x, y, z, label) {
+      document.getElementById('rig').setAttribute('position', { x, y, z });
+      document.getElementById('room-label').textContent = label || '';
+    }
+
+    // ===== DAY / NIGHT TOGGLE =====
+    let isNight = false;
+    function toggleNight() {
+      isNight = !isNight;
+      const sky = document.getElementById('sky');
+      const sunMesh = document.getElementById('sun-mesh');
+      const sunLight = document.getElementById('sun-light');
+      const ambLight = document.getElementById('ambient-light');
+      const scene = document.getElementById('main-scene');
+      if (isNight) {
+        sky.setAttribute('color', '#0A1D36');
+        sunMesh.setAttribute('material', 'color:#FF5533;emissive:#FF5533;emissiveIntensity:0.6');
+        sunLight.setAttribute('light', 'intensity:0.7;color:#DCA4CA');
+        ambLight.setAttribute('light', 'intensity:0.55;color:#2B3A5A');
+        scene.setAttribute('fog', 'type:exponential;color:#0A1D36;density:0.003');
+      } else {
+        sky.setAttribute('color', '#87CEEB');
+        sunMesh.setAttribute('material', 'color:#FFF4D6;emissive:#FFF4D6;emissiveIntensity:2.5');
+        sunLight.setAttribute('light', 'intensity:2.5;color:#FFF8E0');
+        ambLight.setAttribute('light', 'intensity:1.2;color:#BDD8F0');
+        scene.setAttribute('fog', 'type:exponential;color:#87CEEB;density:0.002');
+      }
+    }
+
+    // ===== STEPPED AERIAL VIEW =====
+    // Space = step UP one level | Ctrl = step DOWN one level
+    //
+    // Step 0 – Ground      (saved y, normal walk height ~1.6)
+    // Step 1 – First Floor (~7 m  – above ground floor / upper windows)
+    // Step 2 – Rooftop     (~16 m – just above roof of building)
+    // Step 3 – Aerial      (~38 m – full bird's-eye overview)
+
+    const STEP_HEIGHTS = [
+      { y: 7,  label: '1ST FLOOR VIEW  \u25b2', duration: 900  },
+      { y: 16, label: 'ROOFTOP VIEW    \u25b2', duration: 900  },
+      { y: 38, label: 'AERIAL VIEW     \u25b2', duration: 1300 }
+    ];
+
+    let viewStep      = -1;   // -1 = on the ground
+    let savedGroundPos = null;
+    let lerpCancel    = false;
+
+    function lerpRig(targetPos, duration) {
+      lerpCancel = false;
+      const rig = document.getElementById('rig');
+      const rawStart = rig.getAttribute('position');
+      const start = {
+        x: parseFloat(rawStart.x),
+        y: parseFloat(rawStart.y),
+        z: parseFloat(rawStart.z)
+      };
+      const startTime = performance.now();
+      function tick(now) {
+        if (lerpCancel) return;
+        const raw = Math.min((now - startTime) / duration, 1);
+        const t   = raw < 0.5 ? 2 * raw * raw : -1 + (4 - 2 * raw) * raw;
+        rig.setAttribute('position', {
+          x: start.x + (targetPos.x - start.x) * t,
+          y: start.y + (targetPos.y - start.y) * t,
+          z: start.z + (targetPos.z - start.z) * t
+        });
+        if (raw < 1) requestAnimationFrame(tick);
+      }
+      requestAnimationFrame(tick);
+    }
+
+    function getRigXZ() {
+      const p = document.getElementById('rig').getAttribute('position');
+      return { x: parseFloat(p.x), z: parseFloat(p.z) };
+    }
+
+    document.addEventListener('keydown', function(e) {
+
+      // SPACE: step UP
+      if (e.code === 'Space') {
+        e.preventDefault();
+        lerpCancel = true;
+        if (viewStep === -1) {
+          const p = document.getElementById('rig').getAttribute('position');
+          savedGroundPos = { x: parseFloat(p.x), y: parseFloat(p.y), z: parseFloat(p.z) };
+        }
+        if (viewStep < STEP_HEIGHTS.length - 1) {
+          viewStep++;
+          const step = STEP_HEIGHTS[viewStep];
+          const xz   = getRigXZ();
+          lerpRig({ x: xz.x, y: step.y, z: xz.z }, step.duration);
+          document.getElementById('room-label').textContent = step.label;
+        }
+      }
+
+      // CTRL: step DOWN
+      if (e.code === 'ControlLeft' || e.code === 'ControlRight') {
+        if (viewStep === -1) return;
+        lerpCancel = true;
+        viewStep--;
+        if (viewStep === -1) {
+          lerpRig(savedGroundPos, 1000);
+          document.getElementById('room-label').textContent = 'GROUND LEVEL \u25bc';
+          setTimeout(function() {
+            if (viewStep === -1) document.getElementById('room-label').textContent = '';
+          }, 1800);
+        } else {
+          const step = STEP_HEIGHTS[viewStep];
+          const xz   = getRigXZ();
+          lerpRig({ x: xz.x, y: step.y, z: xz.z }, step.duration);
+          document.getElementById('room-label').textContent =
+            step.label.replace('\u25b2', '\u25bc');
+        }
+      }
+    });
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,11 @@
+Model Information:
+* title:	couch with bed
+* source:	https://sketchfab.com/3d-models/couch-with-bed-35127e71defc48ec89af7bcd5913240e
+* author:	al_okaidi_production (https://sketchfab.com/Waleed_kh313)
+
+Model License:
+* license type:	CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
+* requirements:	Author must be credited. Commercial use is allowed.
+
+If you use this 3D model in your project be sure to copy paste this credit wherever you share it:
+This work is based on "couch with bed" (https://sketchfab.com/3d-models/couch-with-bed-35127e71defc48ec89af7bcd5913240e) by al_okaidi_production (https://sketchfab.com/Waleed_kh313) licensed under CC-BY-4.0 (http://creativecommons.org/licenses/by/4.0/)
